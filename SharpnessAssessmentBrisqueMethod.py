@@ -4,12 +4,14 @@ import numpy as np
 from scipy import signal
 from scipy.special import gamma
 from PIL import Image
+import time
 
 """
 本段程序基于BRISQUE方法实现图像清晰度评分,具体使用方法如下
 img = cv2.imread('imgpath', 1)
 features = get_feature(img)
 print(compute_score(features))
+4/17 把所有内容都封装了一下，现在支持一键调用
 """
 
 
@@ -31,7 +33,7 @@ def MSCN_img(img):
     功能: 计算MSCN图像,此图像在特征域能区分清晰图像与失真图像,将主要用于后续图像特征计算.
     已正确编写
     """
-    img = img.astype('float64')
+    # img = img.astype('float64')
     window = gauss2D(7, 7/6)  # 生成高斯模板
     mu = signal.convolve2d(img, window, mode="same")  # 正确 function(2)
     mu_sq = np.multiply(mu, mu)  # 正确 用于计算function(3)
@@ -152,7 +154,8 @@ def compute_score(features):
     os.system('svm-scale -r allrange test_ind >> test_ind_scaled')
     os.system('svm-predict -b 1 test_ind_scaled allmodel output >>dump')
     f = open('output')
-    score1 = f.readline()
+    score1 = f.readline().replace('\n','')
+    score1 = float(score1)
     f.close()
     os.remove('output')
     os.remove('dump')
@@ -160,22 +163,23 @@ def compute_score(features):
     return score1
 
 
+def BRISQUE_score(img):
+    score = compute_score(get_feature(img))
+    if score < 48:
+        degree = 'normal'
+    elif score > 48:
+        degree = 'blur'
+    score = str(int(score))
+    return score, degree
+
+
+def main():
+    time_start = time.perf_counter()
+    img = cv2.imread('D:\\graduation_design_imgfile\\images_informal\\555.png', 1)
+    print(BRISQUE_score(img))
+    elasped_time = time.perf_counter() - time_start
+    print('elaspe {0} secend'.format(elasped_time))
+
+
 if __name__ == "__main__":
-    # rootdir = 'D:\\graduation_design_imgfile\\simulated_image\\motion'
-    # file_list = os.listdir(rootdir)
-    # for i in file_list:
-    #     filepath = rootdir + '\\' + i
-    #     # img_load = cv2.imread("D:\\graduation_design_imgfile\\testimage1.bmp", 1)
-    #     img_load = cv2.imread(filepath, 1)
-    #     feats = get_feature(img_load)
-    #     score = compute_score(feats)[0:4]
-    #     if float(score) < 1.:
-    #         score = 1.
-    #     elif float(score) > 99.:
-    #         score = 99.
-    #     else:
-    #         pass
-    #     print('{0}:{1}'.format(i, score))
-    img = cv2.imread('D:\\graduation_design_imgfile\\555.png', 1)
-    features = get_feature(img)
-    print(compute_score(features))
+    main()

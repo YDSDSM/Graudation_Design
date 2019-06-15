@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+import time
 
 """
 本段程序实现了信号丢失检测, 函数返回最大连通分量面积比,以及最大连通分量图,具体使用方法如下
@@ -19,7 +20,7 @@ if ratio >0.9:
 def signal_loss_decetion(img):
     """
     :param img: 输入图像,彩图
-    :return: 最大连通分量面积/图片面积, 最大连通分量图
+    :return: 最大连通分量面积/图片面积, 最大连通分量图, 信号判断
     功能,通过观察最大连通分量面积与图片面积的比值,判断信号是否丢失;方法生效的前提是基于信号丢失时呈现的图片基本是黑的这一事实.
     """
     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -27,6 +28,7 @@ def signal_loss_decetion(img):
     ret, img_bin = cv2.threshold(img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
     S_ratio = 0
     img_maxtype = np.zeros(img.shape)
+    state = 'normal'
     if img_mean < 45:
         image = img_bin.astype('uint8')
         nb_components, labels, stats, centroids = cv2.connectedComponentsWithStats(image, connectivity=4)  # 参数说明:
@@ -47,14 +49,27 @@ def signal_loss_decetion(img):
                 break
         S_ratio = np.divide(max_size, img.size)
         img_maxtype[labels == max_label] = 255
-    return S_ratio, img_maxtype
+        # plt.imshow(img2, 'gray')
+        # plt.show()
+        if S_ratio > 0.6:
+            state = 'signal_loss'
+    S_ratio = str(S_ratio)
+    return S_ratio, state
+        # , img_maxtype
+
+
+def main():
+    time_start = time.perf_counter()
+    for i in range(1000):
+
+        img_load = cv2.imread("D:\\graduation_design_imgfile\\images_informal\\signal_loss3.jpg", 1)
+        ratio, sta1 = signal_loss_decetion(img_load)
+        # print(ratio)
+        # print(sta1)
+
+    elasped_time = time.perf_counter() - time_start
+    print('elaspe {0} secend'.format(elasped_time))
 
 
 if __name__ == "__main__":
-    img_load = cv2.imread("D:\\graduation_design_imgfile\\signal_loss.jpg", 1)
-    ratio, img2 = signal_loss_decetion(img_load)
-    print(ratio)
-    if ratio >0.9:
-        print('信号丢失')
-    # plt.imshow(img2, 'gray')
-    # plt.show()
+    main()
